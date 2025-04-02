@@ -237,7 +237,7 @@ function checkBoloMatch(direction, plate) {
         const plateBox = frontPanel.querySelector(".plate-box")
         plateBox.classList.add("bolo-alert")
         state.boloAlerts.front = true
-        fetch("https://fivem-radar/boloAlert", {
+        fetch("https://sd-policeradar/boloAlert", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -250,7 +250,7 @@ function checkBoloMatch(direction, plate) {
         const plateBox = rearPanel.querySelector(".plate-box")
         plateBox.classList.add("bolo-alert")
         state.boloAlerts.rear = true
-        fetch("https://fivem-radar/boloAlert", {
+        fetch("https://sd-policeradar/boloAlert", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -496,7 +496,7 @@ function updateBoloEntries() {
 
 function removeBoloPlate(plate) {
   state.boloPlates = state.boloPlates.filter((p) => p !== plate)
-  fetch("https://fivem-radar/removeBoloPlate", {
+  fetch("https://sd-policeradar/removeBoloPlate", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
