@@ -48,6 +48,7 @@ local ToggleRadar = function()
             SendNUIMessage({ type = "loadPositions", positions = savedPositions })
         end
     else
+        SetNuiFocus(false, false)
         SendNUIMessage({ type = "close" })
     end
 end
