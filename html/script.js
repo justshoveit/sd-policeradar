@@ -189,6 +189,9 @@ function setupEventListeners() {
       addBoloPlate()
     }
   })
+  document.addEventListener("contextmenu", (e) => {
+    e.preventDefault()
+  })
 }
 
 function updateUIValues(data) {
@@ -559,9 +562,6 @@ function updateLogEntries() {
                     <div class="log-entry-time">${reading.timestamp}</div>
                 </div>
                 <div class="log-entry-actions">
-                    <button class="icon-button print-entry" data-id="${reading.id}" title="Print entry">
-                        <i class="fa-solid fa-print"></i>
-                    </button>
                     <button class="icon-button delete-entry" data-id="${reading.id}" title="Delete entry">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
@@ -571,10 +571,6 @@ function updateLogEntries() {
       const deleteBtn = entryElement.querySelector(".delete-entry")
       deleteBtn.addEventListener("click", () => {
         deleteReading(reading.id)
-      })
-      const printBtn = entryElement.querySelector(".print-entry")
-      printBtn.addEventListener("click", () => {
-        printReading(reading)
       })
     })
   } else {
@@ -586,10 +582,6 @@ function updateLogEntries() {
 function deleteReading(id) {
   state.savedReadings = state.savedReadings.filter((reading) => reading.id !== id)
   updateLogEntries()
-}
-
-function printReading(reading) {
-  showNotification(`Printing ${reading.direction} reading: ${reading.speed} mph`)
 }
 
 function showNotification(message) {
