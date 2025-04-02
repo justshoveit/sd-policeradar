@@ -30,4 +30,7 @@ Store: [Click Here](https://fivem.samueldev.shop)
 ## 📖 Usage
 
 ### Command
-You can use `/radar` to open the UI and `/radarInteract` to actually click on elements of the UI. As mentioned above, you can also open and use elements of the radar system via keybinds, refer to Config.Keybinds in the `config.lua` file
+You can use `/radar` to open the UI and `/radarInteract` to actually click on elements of the UI.
+
+### Keybinds
+As mentioned above, you can also open and use elements of the radar system via keybinds, refer to Config.Keybinds in the `config.lua` file
