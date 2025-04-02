@@ -11,4 +11,4 @@ files { 'html/index.html', 'html/script.js', 'html/style.css' }
 
 client_scripts { 'client.lua' }
 
-shared_scripts { --[['@sd_lib/init.lua']], 'config.lua'}
+shared_scripts { --[['@sd_lib/init.lua']] 'config.lua'}
