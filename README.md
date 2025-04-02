@@ -4,8 +4,9 @@ sd-policeradar is a feature-packed yet minimalist police radar that includes sta
 
 ## UI Preview
 ![FiveM_b3095_GTAProcess_DUfb4efTyl](https://github.com/user-attachments/assets/12aca732-b1da-4a59-813b-b06dd1fb72a2)
-![FiveM_b3095_GTAProcess_thUFoe6eU1](https://github.com/user-attachments/assets/e325b6f7-139e-40dc-8580-4473d99ad540)
-![FiveM_b3095_GTAProcess_UPuCvmtKF7](https://github.com/user-attachments/assets/9165f778-7129-450e-a548-0270beda0aee)
+![FiveM_b3095_GTAProcess_1mIy1CW5EW](https://github.com/user-attachments/assets/37f2dd03-f253-4644-99ab-117fe891f1da)
+![FiveM_b3095_GTAProcess_sgIiUDk1nG](https://github.com/user-attachments/assets/cdd0b550-e346-4163-a6ee-be57b66e9a51)
+
 
 
 
