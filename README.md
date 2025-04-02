@@ -1,6 +1,6 @@
 # sd-policeradar
 
-sd-policeradar is a feature-packed yet minimalist police radar that includes standard functionalities, such as checking the speeds and license plates of vehicles both ahead and behind you. Additionally, you can lock the radar, save entries to a radar log for later retrieval, and create BOLOs that mark a license plate with a red tag if it matches. The system also features a convenient keybind menu displaying all available keybinds, along with the ability to freely move UI elements and save their positions using KVP—ensuring your players layouts is retained across restarts and logouts.
+sd-policeradar is a feature-packed yet minimalist police radar that includes standard functionalities, such as checking the speeds and license plates of vehicles both ahead and behind you. Additionally, you can lock the radar, save entries to a radar log for later retrieval, and create BOLOs that mark a license plate with a red tag if it matches. The system also features a convenient keybind menu displaying all available keybinds, along with the ability to freely move UI elements and save their positions using KVP—ensuring your players layouts are retained across restarts and logouts.
 
 ## UI Preview
 ![FiveM_b3095_GTAProcess_DUfb4efTyl](https://github.com/user-attachments/assets/12aca732-b1da-4a59-813b-b06dd1fb72a2)
