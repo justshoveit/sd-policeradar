@@ -189,9 +189,6 @@ function setupEventListeners() {
       addBoloPlate()
     }
   })
-  document.addEventListener("contextmenu", (e) => {
-    e.preventDefault()
-  })
 }
 
 function updateUIValues(data) {

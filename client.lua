@@ -160,7 +160,7 @@ CreateThread(function()
                     radarEnabled = false
                 end
             end
-            if IsControlJustReleased(0, 177) then
+            if IsControlJustReleased(0, 202) then
                 radarEnabled = false
                 interacting = false
                 SetNuiFocus(false, false)
