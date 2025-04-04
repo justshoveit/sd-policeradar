@@ -1,4 +1,5 @@
 local radarEnabled = false
+local radarWasEnabled = false
 local interacting = false
 local boloPlates = {}
 
@@ -39,6 +40,7 @@ local ToggleRadar = function()
     radarEnabled = not radarEnabled
 
     if radarEnabled then
+        radarWasEnabled = false
         SendNUIMessage({ type = "open" })
         SendNUIMessage({ type = "setKeybinds", keybinds = Config.Keybinds })
         SendNUIMessage({ type = "setNotificationType", notificationType = Config.NotificationType })
@@ -112,7 +114,6 @@ RegisterNUICallback("boloAlert", function(data, cb)
     cb({})
 end)
 
--- New callback for custom notifications
 RegisterNUICallback("showNotification", function(data, cb)
     if Config.NotificationType == "custom" and data.message then
         ShowNotification(data.message)
@@ -120,27 +121,54 @@ RegisterNUICallback("showNotification", function(data, cb)
     cb({})
 end)
 
--- New callback to save positions
 RegisterNUICallback("savePositions", function(data, cb)
     SavePositions(data)
+    cb({})
+end)
+
+RegisterNUICallback("inputActive", function(data, cb)
+    interacting = true
+    SetNuiFocusKeepInput(false)
+    cb({})
+end)
+
+RegisterNUICallback("inputInactive", function(data, cb)
+    if radarEnabled then
+        SetNuiFocusKeepInput(interacting)
+    end
     cb({})
 end)
 
 CreateThread(function()
     local lastUpdate = GetGameTimer()
     while true do
-        if radarEnabled then
-            local now = GetGameTimer()
-            if now - lastUpdate >= Config.UpdateInterval then
-                lastUpdate = now
-                local ped = PlayerPedId()
-                if IsPedInAnyVehicle(ped, false) then
+        local ped = PlayerPedId()
+        local inVehicle = IsPedInAnyVehicle(ped, false)
+        
+        if inVehicle then
+            if radarWasEnabled and not radarEnabled then
+                radarEnabled = true
+                SendNUIMessage({ type = "open" })
+                SendNUIMessage({ type = "setKeybinds", keybinds = Config.Keybinds })
+                SendNUIMessage({ type = "setNotificationType", notificationType = Config.NotificationType })
+                local savedPositions = LoadSavedPositions()
+                if savedPositions then
+                    SendNUIMessage({ type = "loadPositions", positions = savedPositions })
+                end
+                radarWasEnabled = false
+            end
+
+            if radarEnabled then
+                local now = GetGameTimer()
+                if now - lastUpdate >= Config.UpdateInterval then
+                    lastUpdate = now
                     local veh = GetVehiclePedIsIn(ped, false)
                     local pos = GetEntityCoords(ped)
                     local forward = GetEntityForwardVector(ped)
                     local frontTarget = vector3(pos.x + forward.x * Config.FrontDetectionRange, pos.y + forward.y * Config.FrontDetectionRange, pos.z)
                     local rearTarget = vector3(pos.x - forward.x * Config.RearDetectionRange, pos.y - forward.y * Config.RearDetectionRange, pos.z)
                     local startPos = GetOffsetFromEntityInWorldCoords(veh, 0.0, 1.0, 1.0)
+                    
                     local frontRay = StartShapeTestCapsule(startPos, frontTarget, 6.0, 10, veh, 7)
                     local _, _, _, _, frontEntity = GetShapeTestResult(frontRay)
                     local frontSpeed, frontPlate = 0, ""
@@ -148,6 +176,7 @@ CreateThread(function()
                         frontSpeed = math.ceil(GetEntitySpeed(frontEntity) * Config.SpeedMultiplier)
                         frontPlate = GetVehicleNumberPlateText(frontEntity)
                     end
+                    
                     local rearRay = StartShapeTestCapsule(startPos, rearTarget, 3.0, 10, veh, 7)
                     local _, _, _, _, rearEntity = GetShapeTestResult(rearRay)
                     local rearSpeed, rearPlate = 0, ""
@@ -155,26 +184,45 @@ CreateThread(function()
                         rearSpeed = math.ceil(GetEntitySpeed(rearEntity) * Config.SpeedMultiplier)
                         rearPlate = GetVehicleNumberPlateText(rearEntity)
                     end
+                    
                     SendNUIMessage({ type = "update", frontSpeed = frontSpeed, rearSpeed = rearSpeed, frontPlate = frontPlate, rearPlate = rearPlate })
-                else
-                    SendNUIMessage({ type = "close" })
-                    radarEnabled = false
                 end
             end
-            if IsControlJustReleased(0, 202) then
+        else
+            if radarEnabled then
+                if Config.ReopenRadarAfterLeave then
+                    radarWasEnabled = true
+                end
+                SendNUIMessage({ type = "close" })
                 radarEnabled = false
                 interacting = false
                 SetNuiFocus(false, false)
-                SendNUIMessage({ type = "close" })
             end
-            if interacting then
-                DisableControlAction(0, 1, true)
-                DisableControlAction(0, 2, true)
-            end
-            Wait(0)
-        else
-            Wait(100)
         end
+
+        if radarEnabled and IsControlJustReleased(0, 202) then
+            radarEnabled = false
+            interacting = false
+            SetNuiFocus(false, false)
+            SendNUIMessage({ type = "close" })
+        end
+
+        if interacting then
+            DisableControlAction(0, 1, true)
+            DisableControlAction(0, 2, true)
+            DisableControlAction(0, 24, true)
+            DisableControlAction(0, 25, true)
+            DisableControlAction(0, 68, true)
+            DisableControlAction(0, 69, true)
+            DisableControlAction(0, 70, true)
+            DisableControlAction(0, 91, true)
+            DisableControlAction(0, 92, true)
+            
+            for command, _ in pairs(simpleCommands) do
+                DisableControlAction(0, GetHashKey("+" .. command), true)
+            end
+        end
+
+        Wait(0)
     end
 end)
-
