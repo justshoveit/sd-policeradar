@@ -189,6 +189,26 @@ function setupEventListeners() {
       addBoloPlate()
     }
   })
+
+  boloPlateInput.addEventListener("focus", () => {
+    fetch("https://sd-policeradar/inputActive", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    }).catch(() => {})
+  })
+
+  boloPlateInput.addEventListener("blur", () => {
+    fetch("https://sd-policeradar/inputInactive", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    }).catch(() => {})
+  })
 }
 
 function updateUIValues(data) {
