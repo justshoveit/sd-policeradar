@@ -2,6 +2,8 @@ Config = {}
 
 Config.NotificationType = "native" -- native/custom (native means built in notify from the radar itself, custom will mean it'll use ShowNotification function)
 
+Config.ReopenRadarAfterLeave = true -- true/false (if true, the radar will automatically reopen when you re-enter a vehicle after leaving it)
+
 ShowNotification = function(message)
     -- Custom notification function
     -- This is where you can implement your own notification system
