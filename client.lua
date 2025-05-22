@@ -3,18 +3,17 @@ local radarWasEnabled = false
 local interacting = false
 local boloPlates = {}
 
-local SendIfRadarEnabled = function(message)
+-- Send NUI messages only when radar is enabled
+local function SendIfRadarEnabled(message)
     if radarEnabled then
         SendNUIMessage(message)
     end
 end
 
+-- Load/save radar UI positions from resource KVP
 local function LoadSavedPositions()
-    local positionsJson = GetResourceKvpString("radar_positions")
-    if positionsJson then
-        return json.decode(positionsJson)
-    end
-    return nil
+    local jsonStr = GetResourceKvpString("radar_positions")
+    return jsonStr and json.decode(jsonStr) or nil
 end
 
 local function SavePositions(positions)
@@ -23,7 +22,8 @@ local function SavePositions(positions)
     end
 end
 
-local ToggleRadar = function()
+-- Toggle the radar UI open/close
+local function ToggleRadar()
     local ped = PlayerPedId()
     if not IsPedInAnyVehicle(ped, false) then
         return
@@ -45,9 +45,9 @@ local ToggleRadar = function()
         SendNUIMessage({ type = "setKeybinds", keybinds = Config.Keybinds })
         SendNUIMessage({ type = "setNotificationType", notificationType = Config.NotificationType })
 
-        local savedPositions = LoadSavedPositions()
-        if savedPositions then
-            SendNUIMessage({ type = "loadPositions", positions = savedPositions })
+        local saved = LoadSavedPositions()
+        if saved then
+            SendNUIMessage({ type = "loadPositions", positions = saved })
         end
     else
         interacting = false
@@ -56,12 +56,11 @@ local ToggleRadar = function()
     end
 end
 
-RegisterCommand("radar", function()
-    ToggleRadar()
-end, false)
-
+-- Register slash command and keybind to toggle
+RegisterCommand("radar", ToggleRadar, false)
 RegisterKeyMapping("radar", "Toggle Radar", "keyboard", Config.Keybinds.ToggleRadar)
 
+-- Toggle UI interaction mode
 RegisterCommand("radarInteract", function()
     if radarEnabled then
         interacting = not interacting
@@ -69,38 +68,36 @@ RegisterCommand("radarInteract", function()
         SetNuiFocusKeepInput(interacting)
     end
 end, false)
-
 RegisterKeyMapping("radarInteract", "Interact with Radar UI", "keyboard", Config.Keybinds.Interact)
 
 local simpleCommands = {
-    radarSave = { key = Config.Keybinds.SaveReading, desc = "Save Radar Reading", msg = { type = "saveReading" } },
-    radarLock = { key = Config.Keybinds.LockRadar, desc = "Toggle Radar Lock", msg = { type = "toggleLock" } },
+    radarSave        = { key = Config.Keybinds.SaveReading, desc = "Save Radar Reading", msg = { type = "saveReading" } },
+    radarLock        = { key = Config.Keybinds.LockRadar, desc = "Toggle Radar Lock", msg = { type = "toggleLock" } },
     radarSelectFront = { key = Config.Keybinds.SelectFront, desc = "Select Front", msg = { type = "selectDirection", data = "Front" } },
-    radarSelectRear = { key = Config.Keybinds.SelectRear, desc = "Select Rear", msg = { type = "selectDirection", data = "Rear" } },
-    radarToggleLog = { key = Config.Keybinds.ToggleLog, desc = "Toggle Radar Log", msg = { type = "toggleLog" } },
-    radarToggleBolo = { key = Config.Keybinds.ToggleBolo, desc = "Toggle BOLO List", msg = { type = "toggleBolo" } },
-    radarToggleKeybinds = { key = Config.Keybinds.ToggleKeybinds, desc = "Toggle Radar Keybinds", msg = { type = "toggleKeybinds" } }
+    radarSelectRear  = { key = Config.Keybinds.SelectRear, desc = "Select Rear", msg = { type = "selectDirection", data = "Rear" } },
+    radarToggleLog   = { key = Config.Keybinds.ToggleLog, desc = "Toggle Radar Log", msg = { type = "toggleLog" } },
+    radarToggleBolo  = { key = Config.Keybinds.ToggleBolo, desc = "Toggle BOLO List", msg = { type = "toggleBolo" } },
+    radarToggleKeybinds = { key = Config.Keybinds.ToggleKeybinds, desc = "Toggle Radar Keybinds", msg = { type = "toggleKeybinds" } },
 }
 
-for command, info in pairs(simpleCommands) do
-    RegisterCommand(command, function() SendIfRadarEnabled(info.msg) end, false)
-    RegisterKeyMapping(command, info.desc, "keyboard", info.key)
+for cmd, info in pairs(simpleCommands) do
+    RegisterCommand(cmd, function() SendIfRadarEnabled(info.msg) end, false)
+    RegisterKeyMapping(cmd, info.desc, "keyboard", info.key)
 end
 
+-- NUI callbacks for BOLO, notifications, saving, input focus
 RegisterNUICallback("addBoloPlate", function(data, cb)
-    local plate = data.plate
-    if plate then
-        table.insert(boloPlates, plate)
+    if data.plate then
+        table.insert(boloPlates, data.plate)
         SendNUIMessage({ type = "updateBoloPlates", plates = boloPlates })
     end
     cb({})
 end)
 
 RegisterNUICallback("removeBoloPlate", function(data, cb)
-    local plate = data.plate
-    if plate then
+    if data.plate then
         for i, p in ipairs(boloPlates) do
-            if p == plate then
+            if p == data.plate then
                 table.remove(boloPlates, i)
                 break
             end
@@ -140,90 +137,117 @@ RegisterNUICallback("inputInactive", function(data, cb)
     cb({})
 end)
 
+-- Open/close UI helpers
+local function OpenRadarUI()
+    SendNUIMessage({ type = "open" })
+    SendNUIMessage({ type = "setKeybinds", keybinds = Config.Keybinds })
+    SendNUIMessage({ type = "setNotificationType", notificationType = Config.NotificationType })
+    local saved = LoadSavedPositions()
+    if saved then
+        SendNUIMessage({ type = "loadPositions", positions = saved })
+    end
+end
+
+local function CloseRadarUI()
+    interacting = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ type = "close" })
+end
+
+local function DoRadarUpdate(ped, veh)
+    local pos     = GetEntityCoords(ped)
+    local forward = GetEntityForwardVector(ped)
+
+    local frontTarget = vector3(
+        pos.x + forward.x * Config.FrontDetectionRange,
+        pos.y + forward.y * Config.FrontDetectionRange,
+        pos.z
+    )
+    local rearTarget = vector3(
+        pos.x - forward.x * Config.RearDetectionRange,
+        pos.y - forward.y * Config.RearDetectionRange,
+        pos.z
+    )
+
+    local startPos = GetOffsetFromEntityInWorldCoords(veh, 0.0, 1.0, 1.0)
+
+    local fRay = StartShapeTestCapsule(startPos, frontTarget, 6.0, 10, veh, 7)
+    local _, _, _, _, fEnt = GetShapeTestResult(fRay)
+    local fSpeed, fPlate = 0, ""
+    if IsEntityAVehicle(fEnt) then
+        fSpeed = math.ceil(GetEntitySpeed(fEnt) * Config.SpeedMultiplier)
+        fPlate = GetVehicleNumberPlateText(fEnt)
+    end
+
+    local rRay = StartShapeTestCapsule(startPos, rearTarget, 3.0, 10, veh, 7)
+    local _, _, _, _, rEnt = GetShapeTestResult(rRay)
+    local rSpeed, rPlate = 0, ""
+    if IsEntityAVehicle(rEnt) then
+        rSpeed = math.ceil(GetEntitySpeed(rEnt) * Config.SpeedMultiplier)
+        rPlate = GetVehicleNumberPlateText(rEnt)
+    end
+
+    SendNUIMessage({
+        type       = "update",
+        frontSpeed = fSpeed,
+        rearSpeed  = rSpeed,
+        frontPlate = fPlate,
+        rearPlate  = rPlate
+    })
+end
+
+local disableControls = { 1,2,24,25,68,69,70,91,92 }
+for cmd,_ in pairs(simpleCommands) do
+    table.insert(disableControls, GetHashKey("+" .. cmd))
+end
+
+-- Main thread loop
 CreateThread(function()
     local lastUpdate = GetGameTimer()
+
     while true do
         local ped = PlayerPedId()
-        local inVehicle = IsPedInAnyVehicle(ped, false)
-        
-        if inVehicle then
+        local veh = GetVehiclePedIsIn(ped, false)
+        local inVeh = veh ~= 0
+        local now   = GetGameTimer()
+
+        if inVeh then
             if radarWasEnabled and not radarEnabled then
-                radarEnabled = true
-                SendNUIMessage({ type = "open" })
-                SendNUIMessage({ type = "setKeybinds", keybinds = Config.Keybinds })
-                SendNUIMessage({ type = "setNotificationType", notificationType = Config.NotificationType })
-                local savedPositions = LoadSavedPositions()
-                if savedPositions then
-                    SendNUIMessage({ type = "loadPositions", positions = savedPositions })
-                end
+                radarEnabled   = true
+                OpenRadarUI()
                 radarWasEnabled = false
             end
 
-            if radarEnabled then
-                local now = GetGameTimer()
-                if now - lastUpdate >= Config.UpdateInterval then
-                    lastUpdate = now
-                    local veh = GetVehiclePedIsIn(ped, false)
-                    local pos = GetEntityCoords(ped)
-                    local forward = GetEntityForwardVector(ped)
-                    local frontTarget = vector3(pos.x + forward.x * Config.FrontDetectionRange, pos.y + forward.y * Config.FrontDetectionRange, pos.z)
-                    local rearTarget = vector3(pos.x - forward.x * Config.RearDetectionRange, pos.y - forward.y * Config.RearDetectionRange, pos.z)
-                    local startPos = GetOffsetFromEntityInWorldCoords(veh, 0.0, 1.0, 1.0)
-                    
-                    local frontRay = StartShapeTestCapsule(startPos, frontTarget, 6.0, 10, veh, 7)
-                    local _, _, _, _, frontEntity = GetShapeTestResult(frontRay)
-                    local frontSpeed, frontPlate = 0, ""
-                    if IsEntityAVehicle(frontEntity) then
-                        frontSpeed = math.ceil(GetEntitySpeed(frontEntity) * Config.SpeedMultiplier)
-                        frontPlate = GetVehicleNumberPlateText(frontEntity)
-                    end
-                    
-                    local rearRay = StartShapeTestCapsule(startPos, rearTarget, 3.0, 10, veh, 7)
-                    local _, _, _, _, rearEntity = GetShapeTestResult(rearRay)
-                    local rearSpeed, rearPlate = 0, ""
-                    if IsEntityAVehicle(rearEntity) then
-                        rearSpeed = math.ceil(GetEntitySpeed(rearEntity) * Config.SpeedMultiplier)
-                        rearPlate = GetVehicleNumberPlateText(rearEntity)
-                    end
-                    
-                    SendNUIMessage({ type = "update", frontSpeed = frontSpeed, rearSpeed = rearSpeed, frontPlate = frontPlate, rearPlate = rearPlate })
-                end
+            if radarEnabled and (now - lastUpdate >= Config.UpdateInterval) then
+                lastUpdate = now
+                DoRadarUpdate(ped, veh)
             end
+
         else
             if radarEnabled then
                 if Config.ReopenRadarAfterLeave then
                     radarWasEnabled = true
                 end
-                SendNUIMessage({ type = "close" })
+                CloseRadarUI()
                 radarEnabled = false
-                interacting = false
-                SetNuiFocus(false, false)
             end
         end
 
         if radarEnabled and IsControlJustReleased(0, 202) then
             radarEnabled = false
-            interacting = false
-            SetNuiFocus(false, false)
-            SendNUIMessage({ type = "close" })
+            CloseRadarUI()
         end
 
         if interacting then
-            DisableControlAction(0, 1, true)
-            DisableControlAction(0, 2, true)
-            DisableControlAction(0, 24, true)
-            DisableControlAction(0, 25, true)
-            DisableControlAction(0, 68, true)
-            DisableControlAction(0, 69, true)
-            DisableControlAction(0, 70, true)
-            DisableControlAction(0, 91, true)
-            DisableControlAction(0, 92, true)
-            
-            for command, _ in pairs(simpleCommands) do
-                DisableControlAction(0, GetHashKey("+" .. command), true)
+            for _, ctrl in ipairs(disableControls) do
+                DisableControlAction(0, ctrl, true)
             end
         end
 
-        Wait(0)
+        if radarEnabled or interacting then
+            Wait(0)
+        else
+            Wait(200)
+        end
     end
 end)
