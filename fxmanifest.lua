@@ -3,7 +3,7 @@ games { 'gta5' }
 
 author 'Made with Love by Samuel0008'
 description 'Police Radar for FiveM'
-version '1.0.1'
+version '1.0.3'
 
 ui_page 'html/index.html'
 
